@@ -3,10 +3,8 @@ package com.drevotyuk.service;
 import com.drevotyuk.model.Customer;
 import com.drevotyuk.model.Order;
 import com.drevotyuk.repository.CustomerRepository;
-import java.sql.Wrapper;
-import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.Optional;
-import org.aspectj.weaver.ast.Or;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.ResolvableType;
@@ -14,13 +12,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -32,7 +23,7 @@ public class CustomerService {
     @Autowired
     private RestTemplate restTemplate;
 
-    public ResponseEntity<Customer> getCustomerById(@PathVariable int customerId) {
+    public ResponseEntity<Customer> getCustomerById(int customerId) {
         Optional<Customer> optCustomer = repository.findById(customerId);
         if (!optCustomer.isPresent())
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -40,7 +31,7 @@ public class CustomerService {
         return new ResponseEntity<>(optCustomer.get(), HttpStatus.OK);
     }
 
-    public Iterable<Order> getOrdersById(@PathVariable int id) {
+    public Iterable<Order> getOrdersById(int id) {
         String orderUrl = "http://localhost:8083/order?customerId=" + id;
         return restTemplate
                 .exchange(orderUrl, HttpMethod.GET, null,
@@ -49,8 +40,15 @@ public class CustomerService {
                 .getBody();
     }
 
-    public ResponseEntity<Order> addOrderById(
-            @PathVariable int customerId, @RequestBody Order order) {
+    public ResponseEntity<Customer> addCustomer(Customer customer) {
+        customer.setCreationDate(LocalDate.now());
+
+        // we think of indentical customer's accounts as one person who registered
+        // twice, for example using different e-mails
+        return new ResponseEntity<>(repository.save(customer), HttpStatus.CREATED);
+    }
+
+    public ResponseEntity<Order> addOrderById(int customerId, Order order) {
         String orderUrl = "http://localhost:8083/order/";
         order.setCustomerId(customerId);
 
@@ -64,8 +62,7 @@ public class CustomerService {
         return orderEntity;
     }
 
-    public ResponseEntity<Customer> updateCustomerById(
-            @PathVariable int customerId, @RequestBody Customer customer) {
+    public ResponseEntity<Customer> updateCustomerById(int customerId, Customer customer) {
         Optional<Customer> optInitialCustomer = repository.findById(customerId);
         if (!optInitialCustomer.isPresent())
             return new ResponseEntity<>(repository.save(customer), HttpStatus.CREATED);
@@ -80,8 +77,7 @@ public class CustomerService {
         return new ResponseEntity<>(repository.save(initialCustomer), HttpStatus.OK);
     }
 
-    public ResponseEntity<Order> updateOrderById(
-            @PathVariable int customerId, @PathVariable int orderId, @RequestBody Order order) {
+    public ResponseEntity<Order> updateOrderById(int customerId, int orderId, Order order) {
         String orderUrl = "http://localhost:8083/order/" + orderId;
 
         try {
@@ -103,7 +99,7 @@ public class CustomerService {
         }
     }
 
-    public ResponseEntity<Customer> deleteCustomerById(@PathVariable int customerId) {
+    public ResponseEntity<Customer> deleteCustomerById(int customerId) {
         if (!repository.existsById(customerId))
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
@@ -111,8 +107,7 @@ public class CustomerService {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    public ResponseEntity<Order> deleteOrderById(
-            @PathVariable int customerId, @PathVariable int orderId) {
+    public ResponseEntity<Order> deleteOrderById(int customerId, int orderId) {
         String orderUrl = "http://localhost:8083/order/" + orderId;
 
         try {

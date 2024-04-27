@@ -25,17 +25,16 @@ public class Customer {
     private String surname;
     @NonNull
     private String lastname;
-    @NonNull
+    @GeneratedValue
     private LocalDate creationDate;
     @NonNull
     private String address;
 
     public Customer(@NonNull String firstname, @NonNull String surname, @NonNull String lastname,
-            @NonNull LocalDate creationDate, @NonNull String address) {
+            @NonNull String address) {
         this.firstname = firstname;
         this.surname = surname;
         this.lastname = lastname;
-        this.creationDate = creationDate;
         this.address = address;
     }
 }

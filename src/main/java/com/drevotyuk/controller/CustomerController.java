@@ -5,7 +5,6 @@ import com.drevotyuk.model.Order;
 import com.drevotyuk.repository.CustomerRepository;
 import com.drevotyuk.service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,9 +40,7 @@ public class CustomerController {
 
     @PostMapping
     public ResponseEntity<Customer> addCustomer(@RequestBody Customer customer) {
-        // we think of indentical customer's accounts as one person who registered
-        // twice, for example using different e-mails
-        return new ResponseEntity<>(repository.save(customer), HttpStatus.CREATED);
+        return service.addCustomer(customer);
     }
 
     @PostMapping("/{id}/order")
