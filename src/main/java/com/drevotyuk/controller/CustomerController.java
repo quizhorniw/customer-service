@@ -1,8 +1,9 @@
 package com.drevotyuk.controller;
 
 import com.drevotyuk.model.Customer;
+import com.drevotyuk.model.Order;
 import com.drevotyuk.repository.CustomerRepository;
-import java.util.Optional;
+import com.drevotyuk.service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class CustomerController {
     @Autowired
     private CustomerRepository repository;
+    @Autowired
+    private CustomerService service;
 
     @GetMapping
     public Iterable<Customer> getAllCustomers() {
@@ -28,11 +31,12 @@ public class CustomerController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Customer> getCustomer(@PathVariable int id) {
-        Optional<Customer> optCustomer = repository.findById(id);
-        if (!optCustomer.isPresent())
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        return service.getCustomerById(id);
+    }
 
-        return new ResponseEntity<>(optCustomer.get(), HttpStatus.OK);
+    @GetMapping("/{id}/orders")
+    public Iterable<Order> getOrders(@PathVariable int id) {
+        return service.getOrdersById(id);
     }
 
     @PostMapping
@@ -42,29 +46,31 @@ public class CustomerController {
         return new ResponseEntity<>(repository.save(customer), HttpStatus.CREATED);
     }
 
+    @PostMapping("/{id}/order")
+    public ResponseEntity<Order> addOrder(@PathVariable int id, @RequestBody Order order) {
+        return service.addOrderById(id, order);
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<Customer> updateCustomer(
             @PathVariable int id, @RequestBody Customer customer) {
-        Optional<Customer> optInitialCustomer = repository.findById(id);
-        if (!optInitialCustomer.isPresent())
-            return new ResponseEntity<>(repository.save(customer), HttpStatus.CREATED);
+        return service.updateCustomerById(id, customer);
+    }
 
-        Customer initialCustomer = optInitialCustomer.get();
-        initialCustomer.setFirstname(customer.getFirstname());
-        initialCustomer.setSurname(customer.getSurname());
-        initialCustomer.setLastname(customer.getLastname());
-        initialCustomer.setCreationDate(customer.getCreationDate());
-        initialCustomer.setAddress(customer.getAddress());
-
-        return new ResponseEntity<>(repository.save(initialCustomer), HttpStatus.OK);
+    @PutMapping("/{customerId}/order/{orderId}")
+    public ResponseEntity<Order> updateOrder(
+            @PathVariable int customerId, @PathVariable int orderId, @RequestBody Order order) {
+        return service.updateOrderById(customerId, orderId, order);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Customer> deleteCustomer(@PathVariable int id) {
-        if (!repository.existsById(id))
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        return service.deleteCustomerById(id);
+    }
 
-        repository.deleteById(id);
-        return new ResponseEntity<>(HttpStatus.OK);
+    @DeleteMapping("/{customerId}/order/{orderId}")
+    public ResponseEntity<Order> deleteOrder(
+            @PathVariable int customerId, @PathVariable int orderId) {
+        return service.deleteOrderById(customerId, orderId);
     }
 }

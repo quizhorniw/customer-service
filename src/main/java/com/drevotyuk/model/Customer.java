@@ -4,12 +4,14 @@ import java.time.LocalDate;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
 @Entity
+@Table(name = "CUSTOMERS")
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
