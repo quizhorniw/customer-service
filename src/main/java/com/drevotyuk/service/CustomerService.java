@@ -26,6 +26,10 @@ public class CustomerService {
     @Value("${order.url}")
     private String orderServiceUrl;
 
+    public Iterable<Customer> getAllCustomers() {
+        return repository.findAll();
+    }
+
     public ResponseEntity<Customer> getCustomer(int customerId) {
         Optional<Customer> optCustomer = repository.findById(customerId);
         if (!optCustomer.isPresent())
@@ -61,10 +65,12 @@ public class CustomerService {
     }
 
     public ResponseEntity<Customer> addCustomer(Customer customer) {
-        customer.setCreationDate(LocalDate.now());
+        for (Customer c : getAllCustomers()) {
+            if (c.equals(customer))
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
 
-        // we think of indentical customer's accounts as one person who registered
-        // twice, for example using different e-mails
+        customer.setCreationDate(LocalDate.now());
         return new ResponseEntity<>(repository.save(customer), HttpStatus.CREATED);
     }
 
@@ -89,9 +95,9 @@ public class CustomerService {
             return new ResponseEntity<>(repository.save(customer), HttpStatus.CREATED);
 
         Customer initialCustomer = optInitialCustomer.get();
-        initialCustomer.setFirstname(customer.getFirstname());
         initialCustomer.setSurname(customer.getSurname());
-        initialCustomer.setLastname(customer.getLastname());
+        initialCustomer.setFirstname(customer.getFirstname());
+        initialCustomer.setPatronymic(customer.getPatronymic());
         initialCustomer.setAddress(customer.getAddress());
 
         return new ResponseEntity<>(repository.save(initialCustomer), HttpStatus.OK);

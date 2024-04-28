@@ -19,7 +19,7 @@ public class Order {
     @Id
     @GeneratedValue
     private int id;
-    @GeneratedValue
+    @NonNull
     private LocalDateTime creationTime;
     @NonNull
     private OrderStatus status;
@@ -29,7 +29,7 @@ public class Order {
     private String productName;
     @NonNull
     private int productQuantity;
-    @GeneratedValue
+    @NonNull
     private double totalPrice;
 
     public enum OrderStatus {
@@ -38,9 +38,8 @@ public class Order {
         DELIVERED;
     }
 
-    public Order(@NonNull OrderStatus status, @NonNull int customerId, @NonNull String productName,
-            @NonNull int productQuantity) {
-        this.status = status;
+    public Order(
+            @NonNull int customerId, @NonNull String productName, @NonNull int productQuantity) {
         this.customerId = customerId;
         this.productName = productName;
         this.productQuantity = productQuantity;

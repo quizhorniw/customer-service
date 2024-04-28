@@ -2,7 +2,6 @@ package com.drevotyuk.controller;
 
 import com.drevotyuk.model.Customer;
 import com.drevotyuk.model.Order;
-import com.drevotyuk.repository.CustomerRepository;
 import com.drevotyuk.service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,13 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/customer")
 public class CustomerController {
     @Autowired
-    private CustomerRepository repository;
-    @Autowired
     private CustomerService service;
 
     @GetMapping
     public Iterable<Customer> getAllCustomers() {
-        return repository.findAll();
+        return service.getAllCustomers();
     }
 
     @GetMapping("/{id}")
