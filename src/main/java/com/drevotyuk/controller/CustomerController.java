@@ -30,12 +30,18 @@ public class CustomerController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Customer> getCustomer(@PathVariable int id) {
-        return service.getCustomerById(id);
+        return service.getCustomer(id);
     }
 
     @GetMapping("/{id}/orders")
     public Iterable<Order> getOrders(@PathVariable int id) {
-        return service.getOrdersById(id);
+        return service.getOrders(id);
+    }
+
+    @GetMapping("/{customerId}/order/{orderId}")
+    public ResponseEntity<Order> getOrderById(
+            @PathVariable int customerId, @PathVariable int orderId) {
+        return service.getOrderById(customerId, orderId);
     }
 
     @PostMapping
@@ -45,29 +51,29 @@ public class CustomerController {
 
     @PostMapping("/{id}/order")
     public ResponseEntity<Order> addOrder(@PathVariable int id, @RequestBody Order order) {
-        return service.addOrderById(id, order);
+        return service.addOrder(id, order);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Customer> updateCustomer(
             @PathVariable int id, @RequestBody Customer customer) {
-        return service.updateCustomerById(id, customer);
+        return service.updateCustomer(id, customer);
     }
 
     @PutMapping("/{customerId}/order/{orderId}")
     public ResponseEntity<Order> updateOrder(
             @PathVariable int customerId, @PathVariable int orderId, @RequestBody Order order) {
-        return service.updateOrderById(customerId, orderId, order);
+        return service.updateOrder(customerId, orderId, order);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Customer> deleteCustomer(@PathVariable int id) {
-        return service.deleteCustomerById(id);
+        return service.deleteCustomer(id);
     }
 
     @DeleteMapping("/{customerId}/order/{orderId}")
     public ResponseEntity<Order> deleteOrder(
             @PathVariable int customerId, @PathVariable int orderId) {
-        return service.deleteOrderById(customerId, orderId);
+        return service.deleteOrder(customerId, orderId);
     }
 }

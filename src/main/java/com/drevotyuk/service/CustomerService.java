@@ -6,6 +6,7 @@ import com.drevotyuk.repository.CustomerRepository;
 import java.time.LocalDate;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.ResolvableType;
 import org.springframework.http.HttpMethod;
@@ -22,8 +23,10 @@ public class CustomerService {
     private CustomerRepository repository;
     @Autowired
     private RestTemplate restTemplate;
+    @Value("${order.url}")
+    private String orderServiceUrl;
 
-    public ResponseEntity<Customer> getCustomerById(int customerId) {
+    public ResponseEntity<Customer> getCustomer(int customerId) {
         Optional<Customer> optCustomer = repository.findById(customerId);
         if (!optCustomer.isPresent())
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -31,13 +34,30 @@ public class CustomerService {
         return new ResponseEntity<>(optCustomer.get(), HttpStatus.OK);
     }
 
-    public Iterable<Order> getOrdersById(int id) {
-        String orderUrl = "http://localhost:8083/order?customerId=" + id;
+    public Iterable<Order> getOrders(int customerId) {
+        String url = String.format("http://%s?customerId=" + customerId, orderServiceUrl);
         return restTemplate
-                .exchange(orderUrl, HttpMethod.GET, null,
-                        new ParameterizedTypeReference<Iterable<Order>>() {
+                .exchange(
+                        url, HttpMethod.GET, null, new ParameterizedTypeReference<Iterable<Order>>() {
                         })
                 .getBody();
+    }
+
+    public ResponseEntity<Order> getOrderById(int customerId, int orderId) {
+        String url = String.format("http://%s/" + orderId, orderServiceUrl);
+        try {
+            ResponseEntity<Order> orderEntity = restTemplate.getForEntity(url, Order.class);
+            if (!orderEntity.hasBody())
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
+            Order order = orderEntity.getBody();
+            if (order.getCustomerId() != customerId)
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
+            return new ResponseEntity<>(order, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            return new ResponseEntity<>(e.getStatusCode());
+        }
     }
 
     public ResponseEntity<Customer> addCustomer(Customer customer) {
@@ -48,21 +68,22 @@ public class CustomerService {
         return new ResponseEntity<>(repository.save(customer), HttpStatus.CREATED);
     }
 
-    public ResponseEntity<Order> addOrderById(int customerId, Order order) {
-        String orderUrl = "http://localhost:8083/order/";
+    public ResponseEntity<Order> addOrder(int customerId, Order order) {
+        String url = String.format("http://%s/", orderServiceUrl);
         order.setCustomerId(customerId);
 
-        ResponseEntity<Order> orderEntity;
         try {
-            orderEntity = restTemplate.postForEntity(orderUrl, order, Order.class);
+            ResponseEntity<Order> postOrderEntity = restTemplate.postForEntity(url, order, Order.class);
+
+            return postOrderEntity.hasBody()
+                    ? new ResponseEntity<>(postOrderEntity.getBody(), HttpStatus.CREATED)
+                    : new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (HttpClientErrorException e) {
             return new ResponseEntity<>(e.getStatusCode());
         }
-
-        return orderEntity;
     }
 
-    public ResponseEntity<Customer> updateCustomerById(int customerId, Customer customer) {
+    public ResponseEntity<Customer> updateCustomer(int customerId, Customer customer) {
         Optional<Customer> optInitialCustomer = repository.findById(customerId);
         if (!optInitialCustomer.isPresent())
             return new ResponseEntity<>(repository.save(customer), HttpStatus.CREATED);
@@ -71,17 +92,16 @@ public class CustomerService {
         initialCustomer.setFirstname(customer.getFirstname());
         initialCustomer.setSurname(customer.getSurname());
         initialCustomer.setLastname(customer.getLastname());
-        initialCustomer.setCreationDate(customer.getCreationDate());
         initialCustomer.setAddress(customer.getAddress());
 
         return new ResponseEntity<>(repository.save(initialCustomer), HttpStatus.OK);
     }
 
-    public ResponseEntity<Order> updateOrderById(int customerId, int orderId, Order order) {
-        String orderUrl = "http://localhost:8083/order/" + orderId;
+    public ResponseEntity<Order> updateOrder(int customerId, int orderId, Order order) {
+        String url = String.format("http://%s/" + orderId, orderServiceUrl);
 
         try {
-            ResponseEntity<Order> initialOrderEntity = restTemplate.getForEntity(orderUrl, Order.class);
+            ResponseEntity<Order> initialOrderEntity = restTemplate.getForEntity(url, Order.class);
             if (!initialOrderEntity.hasBody())
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
@@ -90,39 +110,47 @@ public class CustomerService {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
             order.setCustomerId(customerId);
-            restTemplate.put(orderUrl, order);
+            restTemplate.put(url, order);
 
-            ResponseEntity<Order> updatedOrderEntity = restTemplate.getForEntity(orderUrl, Order.class);
-            return updatedOrderEntity;
+            ResponseEntity<Order> updatedOrderEntity = restTemplate.getForEntity(url, Order.class);
+            if (!updatedOrderEntity.hasBody())
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
+            return new ResponseEntity<>(updatedOrderEntity.getBody(), HttpStatus.OK);
         } catch (HttpClientErrorException e) {
             return new ResponseEntity<>(e.getStatusCode());
         }
     }
 
-    public ResponseEntity<Customer> deleteCustomerById(int customerId) {
+    public ResponseEntity<Customer> deleteCustomer(int customerId) {
         if (!repository.existsById(customerId))
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
+        String url = String.format("http://%s/", orderServiceUrl);
+
+        Iterable<Order> orders = getOrders(customerId);
+        orders.forEach(order -> restTemplate.delete(url + order.getId()));
+
         repository.deleteById(customerId);
-        return new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    public ResponseEntity<Order> deleteOrderById(int customerId, int orderId) {
-        String orderUrl = "http://localhost:8083/order/" + orderId;
+    public ResponseEntity<Order> deleteOrder(int customerId, int orderId) {
+        String url = String.format("http://%s/" + orderId, orderServiceUrl);
 
         try {
-            ResponseEntity<Order> initialOrderEntity = restTemplate.getForEntity(orderUrl, Order.class);
+            ResponseEntity<Order> initialOrderEntity = restTemplate.getForEntity(url, Order.class);
             if (!initialOrderEntity.hasBody())
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
             Order initialOrder = initialOrderEntity.getBody();
             if (initialOrder.getCustomerId() != customerId)
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
+            restTemplate.delete(url);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (HttpClientErrorException e) {
             return new ResponseEntity<>(e.getStatusCode());
         }
-
-        restTemplate.delete(orderUrl);
-        return new ResponseEntity<>(HttpStatus.OK);
     }
 }

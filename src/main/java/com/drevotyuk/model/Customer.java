@@ -25,7 +25,7 @@ public class Customer {
     private String surname;
     @NonNull
     private String lastname;
-    @GeneratedValue
+    @NonNull
     private LocalDate creationDate;
     @NonNull
     private String address;

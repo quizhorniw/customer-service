@@ -19,7 +19,7 @@ public class Order {
     @Id
     @GeneratedValue
     private int id;
-    @NonNull
+    @GeneratedValue
     private LocalDateTime creationTime;
     @NonNull
     private OrderStatus status;
@@ -38,9 +38,8 @@ public class Order {
         DELIVERED;
     }
 
-    public Order(@NonNull LocalDateTime creationTime, @NonNull OrderStatus status,
-            @NonNull int customerId, @NonNull String productName, @NonNull int productQuantity) {
-        this.creationTime = creationTime;
+    public Order(@NonNull OrderStatus status, @NonNull int customerId, @NonNull String productName,
+            @NonNull int productQuantity) {
         this.status = status;
         this.customerId = customerId;
         this.productName = productName;
